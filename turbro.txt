@@ -1,0 +1,58 @@
+remote is master and sends one packet per second, AC unit then responds
+RS485 4800 8E1 (even parity!)
+
+
+*****startup packet from remote board, sent 6x
+0000   aa f5 00 00 00 00 01 01 1a 00 00 00 00 00 00 00
+0010   00 00 ef 77
+
+
+*****packet from remote board (auto mode, auto fan)*****
+0000   aa 01 00 01 05 00 01 04 14 00 00 00 00 00 00 00
+0010   00 00 e0 77
+
+*****packet from remote board (heat mode, 86F aka 30C setpoint)*****
+0000   aa 01 00 01 00 00 05 04 1e 00 00 00 00 00 00 00
+0010   00 00 d7 77
+
+aa 01: preamble
+00
+01: bit1=power bit2=led light bit8=swing
+00: 05 in auto 00 all others
+00
+05: mode 01=auto 02=cool 03=dry 04=fan 05=heat
+04: fan speed (always 01 in dry, 04 in heat) 01=low 02=med 03=high 04=auto
+1e: setpoint in degC (always 14 in auto)
+00 00 00 00 00 00 00 00 00
+d7: checksum 0xFF - sum of bytes without preamble, checksum, and postamble
+77: postamble
+
+
+*****packet from AC (cool mode)*****
+0000   aa 01 15 26 27 1d 10 7c 49 4c 5e 03 04 0c 4a 4c
+0010   00 00 54 00 00 00 00 00 04 77 
+
+*****packet from AC (heat mode)*****
+       aa 01 15 34 34 5d 2c 7c 47 43 6e 03 04 0b 5a 53
+       00 00 59 00 00 00 00 00 6d 77 
+0000   aa 01 15 3a 36 57 28 7c 41 3c 69 03 04 0b 5f 5a
+0010   00 00 53 00 00 00 00 00 7b 77
+
+aa 01: preamble
+15
+3a: compressor setpoint ??
+36: compressor actual ??
+57: condenser fan speed ?? (04 just before stopping)
+28 7c
+41: condenser inlet temp ??
+3c: condenser outlet temp ??
+69 03
+04: requested evap fan speed mode (not actual)
+0b: ?? seems to be 0x0b when heating and 0x0c otherwise
+5f: evap outlet temp ?? in deg C + 64
+5a: evap inlet temp ?? used for room temp shown on display in deg C + 0x40 (0x5A - 0x40 = 0x1A = 26 C)
+00 00
+53: temp of ?? in deg C + 64
+00 00 00 00 00
+7b: checksum 0xFF - sum of bytes without preamble, checksum, and postamble
+77: postamble
