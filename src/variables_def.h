@@ -20,11 +20,11 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
           default: Auto
       - therm_setpoint_high:
           label: Thermostat setpoint high *C
-          range: 7, 35, 1
+          range: 5, 35, 1
           default: 22
       - therm_setpoint_low:
           label: Thermostat setpoint low *C
-          range: 7, 35, 1
+          range: 5, 35, 1
           default: 20
       - therm_aux:
           label: Prefer aux heat
@@ -85,7 +85,7 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
     Other settings:
        - gui_brightness:
           label: Display brightness
-          range: 1, 255, 1
+          range: 0, 255, 1
           default: 24
        - debug:
           label: Check to enable debug
@@ -96,7 +96,7 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
           default: DHT22
       - time_zone:
           label: Needs to be a valid time zone string
-          default: EET-2EEST,M3.5.0/3,M10.5.0/4
+          default: America/Vancouver
           datalist:
             - Etc/GMT,GMT0
             - Etc/GMT-0,GMT0

@@ -37,6 +37,7 @@ int Furnace::update()
     return ERR_OK;
   }
 
+  // below runs at 1 Hz
   if (millis() - update_millis > 2000)
   {
     update_millis = millis();
@@ -47,7 +48,7 @@ int Furnace::update()
   }
   sht40.measureLowestPrecision(_temp, _hum);
 
-
+  // bang-bang controller
   if (_mode == 0)
   {
     _relay_on = false;
