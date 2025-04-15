@@ -110,6 +110,32 @@ void remove_style_but_dry(lv_obj_t *obj) {
 };
 
 //
+// Style: but_fan
+//
+
+void init_style_but_fan_MAIN_DEFAULT(lv_style_t *style) {
+    lv_style_set_bg_color(style, lv_color_hex(0xff21f3e2));
+};
+
+lv_style_t *get_style_but_fan_MAIN_DEFAULT() {
+    static lv_style_t *style;
+    if (!style) {
+        style = lv_malloc(sizeof(lv_style_t));
+        lv_style_init(style);
+        init_style_but_fan_MAIN_DEFAULT(style);
+    }
+    return style;
+};
+
+void add_style_but_fan(lv_obj_t *obj) {
+    lv_obj_add_style(obj, get_style_but_fan_MAIN_DEFAULT(), LV_PART_MAIN | LV_STATE_DEFAULT);
+};
+
+void remove_style_but_fan(lv_obj_t *obj) {
+    lv_obj_remove_style(obj, get_style_but_fan_MAIN_DEFAULT(), LV_PART_MAIN | LV_STATE_DEFAULT);
+};
+
+//
 // Style: but_default
 //
 
@@ -198,6 +224,7 @@ void add_style(lv_obj_t *obj, int32_t styleIndex) {
         add_style_but_cool,
         add_style_but_heatcool,
         add_style_but_dry,
+        add_style_but_fan,
         add_style_but_default,
         add_style_lbl_highlight,
         add_style_lbl_default,
@@ -212,6 +239,7 @@ void remove_style(lv_obj_t *obj, int32_t styleIndex) {
         remove_style_but_cool,
         remove_style_but_heatcool,
         remove_style_but_dry,
+        remove_style_but_fan,
         remove_style_but_default,
         remove_style_lbl_highlight,
         remove_style_lbl_default,

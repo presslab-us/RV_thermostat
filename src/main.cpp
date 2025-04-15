@@ -7,6 +7,8 @@
 #include <PicoMQTT.h>
 #include <ArduinoJson.h>
 
+#include <esp_task_wdt.h>
+
 #include "gui.h"
 #include "turbro.h"
 #include "furnace.h"
@@ -34,13 +36,13 @@ PicoMQTT::Client *mqtt;
 void set_low(float &low, float &high)
 {
   float db = conf["therm_setpoint_deadband"].toFloat();
-  if (low < 5)
+  if (low < MIN_TEMP)
   {
-    low = 5;
+    low = MIN_TEMP;
   }
-  else if (low > 35 - db)
+  else if (low > MAX_TEMP - db)
   {
-    low = 35 - db;
+    low = MAX_TEMP - db;
   }
   if (low > high - db)
   {
@@ -51,13 +53,13 @@ void set_low(float &low, float &high)
 void set_high(float &low, float &high)
 {
   float db = conf["therm_setpoint_deadband"].toFloat();
-  if (high < 5 + db)
+  if (high < MIN_TEMP + db)
   {
-    high = 5 + db;
+    high = MIN_TEMP + db;
   }
-  else if (high > 35)
+  else if (high > MAX_TEMP)
   {
-    high = 35;
+    high = MAX_TEMP;
   }
   if (high < low + db)
   {
@@ -82,6 +84,9 @@ void handleRoot()
 {
   String out("<h2>Hello from {name}</h2>");
   out += "<h4>Device time: " + conf.getLocalTime() + "</h4>";
+  out += "<h4>IPv4: " + WiFi.localIP().toString() + "</h4>";
+  out += "<h4>IPv6 Local: " + WiFi.linkLocalIPv6().toString() + "</h4>";
+  out += "<h4>IPv6 Global: " + WiFi.globalIPv6().toString() + "</h4>";
   out += "<a href='/cfg'>Edit config</a>";
   out.replace("{name}", "ESP32");
   server.send(200, "text/html", out);
@@ -91,10 +96,17 @@ void setup()
 {
   sleep(5);
   LOG_I("Starting..\n");
+  ESP_ERROR_CHECK(esp_task_wdt_deinit());
+  esp_task_wdt_config_t twdt_config = {
+    .timeout_ms = 120*1000,
+    .idle_core_mask = (1 << CONFIG_FREERTOS_NUMBER_OF_CORES) - 1,    // Bitmask of all cores
+    .trigger_panic = false,
+  };
+  ESP_ERROR_CHECK(esp_task_wdt_init(&twdt_config));
+  enableLoopWDT();
   gui.init();
   furnace.init(); // do this soon so relay will shut off when reset (due to WDT/crash)
-
-  WiFi.setTxPower(WIFI_POWER_5dBm);
+  
   turbro.init();
   turbro.rx_topic = conf("mqtt_topic") + "/rx";
 
@@ -104,7 +116,7 @@ void setup()
 
   ConfigAssistHelper confHelper(conf);
   WiFi.setHostname(conf("host_name").c_str());
-
+  
   // Connect to any available network
   bool bConn = confHelper.connectToNetwork(15000);
   if (!bConn)
@@ -112,8 +124,12 @@ void setup()
     LOG_E("WiFi client connect failed.\n");
   }
 
-  confHelper.setReconnect(true);
+  WiFi.enableIPv6();
+  WiFi.softAPenableIPv6();
+  //confHelper.setReconnect(true);
   WiFi.setAutoReconnect(true);
+  WiFi.setTxPower(WIFI_POWER_5dBm);
+  WiFi.setSleep(false);
   // Start AP to fix wifi credentials
   conf.setup(server, !bConn);
 
@@ -161,7 +177,7 @@ void setup()
   setpoint_high = conf["therm_setpoint_high"].toInt();
   aux_heat = conf["therm_aux"].toInt();
 
-  mqtt = new PicoMQTT::Client(conf["mqtt_broker"].c_str(), 1883, nullptr, conf["mqtt_user"].c_str(), conf["mqtt_pass"].c_str());
+  mqtt = new PicoMQTT::Client(conf["mqtt_broker"].c_str(), 1883, nullptr, conf["mqtt_user"].c_str(), conf["mqtt_pass"].c_str(), 5000, 60000, 300);
 
   // Subscribe to a topic pattern and attach a callback
   mqtt->subscribe(conf["mqtt_topic"] + "/mode/set", [](const char *payload)
@@ -205,7 +221,9 @@ void setup()
 
 void loop()
 {
-  static bool ac_failed = false;
+  static bool ac_comm_failed = false;
+  static bool ac_temp_failed = false;
+  static int ac_comm_failed_ctr = 0;
   int ac_mode = 0;
   static uint32_t save_millis = 0, ac_fail_millis = 0;
 
@@ -233,9 +251,9 @@ void loop()
     send_update = true;
   }
 
+  bool furn_mode = false;
   if (aux_heat)
   {
-    bool furn_mode = false;
     ac_mode = mode;
     switch (mode)
     {
@@ -248,86 +266,90 @@ void loop()
       furn_mode = true;
       break;
     }
-    furnace.set_parms(furn_mode, setpoint_low, conf["therm_furn_deadband"].toFloat());
     ac_setpoint = setpoint_high;
   }
   else
   {
-    bool furn_mode = false;
-    static bool use_high_setpoint = false;
-    ac_mode = mode;
+    static bool cool = false;
     switch (mode)
     {
     // don't use the AC auto mode, instead use cool or heat mode depending on actual temp
     case MODE_AUTO:
-      if (turbro.get_temp() > setpoint_high)
+      if (turbro.get_temp() > setpoint_high) // cool mode runs fan all the time. only use if within hysteresis
       {
-        use_high_setpoint = true;
+        cool = true;
       }
-      else if (turbro.get_temp() < setpoint_low)
+      else if (turbro.get_temp() < setpoint_high)
       {
-        use_high_setpoint = false;
+        cool = false;
       }
-      ac_setpoint = use_high_setpoint ? setpoint_high : setpoint_low;
-      ac_mode = use_high_setpoint ? MODE_COOL : MODE_HEAT;
-      furn_mode = ac_failed;
-      break;
-    case MODE_HEAT:
-      ac_setpoint = setpoint_low;
-      furn_mode = ac_failed;
-      break;
-    default:
-      ac_setpoint = setpoint_high;
-      break;
-    }
-    furnace.set_parms(furn_mode, setpoint_low, conf["therm_furn_deadband"].toFloat());
-    turbro.set_parms(ac_mode, fan, ac_setpoint);
-  }
 
-  furnace.update();
-  int retval = turbro.update();
-
-  // this complicated failover routine will do three things:
-  //  if ac unit doesn't commuicate for "therm_ac_fail_comm_time" it will set ac_failed to run aux heater (when demanded)
-  //  if ac unit doesn't get within "therm_ac_fail_temp" of setpoint (heating side only) for "therm_ac_fail_temp_time" it will set ac_failed
-  //  after either failure it will wait for "therm_ac_recover_time" before clearing ac_failed
-  if (retval != ERR_OK)
-  {
-    log_i("turbro retval: %d\n", retval);
-    if (ac_failed)
-    {
-      ac_fail_millis = millis();
-    }
-    else if (millis() - ac_fail_millis > conf["therm_ac_fail_comm_time"].toInt() * 1000)
-    {
-      ac_failed = true;
-    }
-  }
-  else
-  {
-    if ((mode != MODE_AUTO && mode != MODE_HEAT) ||
-        ac_setpoint - turbro.get_temp() <= conf["therm_ac_fail_temp"].toInt()) // check if temp is good
-    {
-      if (ac_failed) // if failed then only clear flag if recover time has passed
+      if (cool)
       {
-        if (millis() - ac_fail_millis > conf["therm_ac_recover_time"].toInt() * 1000)
-        {
-          ac_failed = false;
-          ac_fail_millis = millis();
-        }
+        ac_mode = MODE_COOL;
+        ac_setpoint = setpoint_high;
       }
       else
       {
+        ac_mode = MODE_HEAT;
+        ac_setpoint = setpoint_low;
+      }
+      furn_mode = ac_comm_failed || ac_temp_failed;
+      break;
+    case MODE_HEAT:
+      ac_mode = mode;
+      ac_setpoint = setpoint_low;
+      furn_mode = ac_comm_failed || ac_temp_failed;
+      break;
+    default:
+      ac_mode = mode;
+      ac_setpoint = setpoint_high;
+      break;
+    }
+  }
+  furnace.set_parms(furn_mode, setpoint_low, conf["therm_furn_deadband"].toFloat());
+  turbro.set_parms(ac_mode, fan, ac_setpoint);
+
+  furnace.update();
+  int retval = turbro.update();
+  
+  if (retval == TURBRO_ERR)
+  {
+    log_i("turbro retval: %d\n", retval);
+    if (ac_comm_failed_ctr >= 3)
+    {
+      ac_comm_failed = true;
+    }
+    else
+    {
+      ac_comm_failed_ctr ++;
+    }
+  }
+  else if (retval == TURBRO_OK)
+  {
+    ac_comm_failed_ctr = 0;
+    ac_comm_failed = false;
+
+    if (mode == MODE_AUTO || mode == MODE_HEAT)
+    {
+      if (ac_setpoint <= turbro.get_temp())
+      {
+        ac_fail_millis = 0;
+        ac_temp_failed = false;
+      }
+      else if (ac_fail_millis == 0)
+      {
         ac_fail_millis = millis();
       }
+
+      if (ac_fail_millis && (millis() - ac_fail_millis > conf["therm_ac_fail_temp_time"].toInt() * 1000))
+      {
+        ac_temp_failed = true;
+      }
     }
-    else if (ac_failed)
+    else
     {
-      ac_fail_millis = millis();
-    }
-    if (millis() - ac_fail_millis > conf["therm_ac_fail_temp_time"].toInt() * 1000)
-    {
-      ac_failed = true;
+      ac_temp_failed = false;
     }
   }
 
@@ -378,4 +400,6 @@ void loop()
   server.handleClient();
   mqtt->loop();
   gui.update();
+
+  esp_task_wdt_reset();
 }

@@ -1,13 +1,11 @@
 {
   "navigation": {
     "selectedUserPageObject": "[RV_thermostat.eez-project]:/userPages/0",
-    "selectedActionObject": "[RV_thermostat.eez-project]:/actions/-1",
-    "selectedGlobalVariableObject": "[RV_thermostat.eez-project]:/variables/globalVariables/3",
-    "selectedStyleObject": "[RV_thermostat.eez-project]:/lvglStyles/styles/2",
+    "selectedGlobalVariableObject": "[RV_thermostat.eez-project]:/variables/globalVariables/4",
+    "selectedStyleObject": "[RV_thermostat.eez-project]:/lvglStyles/styles/4",
     "selectedThemeObject": "[RV_thermostat.eez-project]:/themes/0",
-    "selectedThemeColorObject": "[RV_thermostat.eez-project]:/colors/2",
+    "selectedThemeColorObject": "[RV_thermostat.eez-project]:/colors/4",
     "selectedFontObject": "[RV_thermostat.eez-project]:/fonts/0",
-    "selectedGlyphObject": "[RV_thermostat.eez-project]:/fonts/0/glyphs/1",
     "selectedLvglGroupObject": "[RV_thermostat.eez-project]:/lvglGroups/groups/0",
     "subnavigationSelectedItems": {
       "variables-tab/sub-navigation/selected-item": "Global"
@@ -31,6 +29,7 @@
           },
           {
             "type": "border",
+            "selected": 0,
             "size": 240,
             "location": "right",
             "children": [
@@ -198,15 +197,14 @@
                       "enableClose": false,
                       "icon": "svg:variable"
                     }
-                  ],
-                  "active": true
+                  ]
                 }
               ]
             },
             {
               "type": "tabset",
               "id": "EDITORS",
-              "weight": 66.16800535475234,
+              "weight": 54.37246963562753,
               "enableDeleteWhenEmpty": false,
               "enableClose": false,
               "children": [
@@ -226,7 +224,7 @@
             {
               "type": "row",
               "id": "#ceb0325b-72b8-40a4-a732-430306701c72",
-              "weight": 18.831994645247658,
+              "weight": 30.62753036437247,
               "children": [
                 {
                   "type": "tabset",
@@ -241,7 +239,8 @@
                       "enableClose": false,
                       "icon": "svg:properties"
                     }
-                  ]
+                  ],
+                  "active": true
                 },
                 {
                   "type": "tabset",
@@ -475,8 +474,7 @@
                   },
                   "icon": "svg:page"
                 }
-              ],
-              "active": true
+              ]
             },
             {
               "type": "row",
@@ -505,7 +503,8 @@
                       "enableClose": false,
                       "icon": "svg:breakpoints_panel"
                     }
-                  ]
+                  ],
+                  "active": true
                 },
                 {
                   "type": "tabset",
@@ -1010,8 +1009,12 @@
         "0": {
           "2": {},
           "4": {},
-          "9": {}
-        }
+          "7": {},
+          "9": {
+            "$selected": true
+          }
+        },
+        "1": {}
       },
       "transform": {
         "translate": {
@@ -1032,7 +1035,12 @@
       "1": {},
       "2": {},
       "3": {},
-      "4": {}
+      "4": {
+        "$selected": true
+      },
+      "5": {},
+      "6": {},
+      "7": {}
     },
     "[RV_thermostat.eez-project]:/actions/0[flow-state]": {
       "selection": {},
@@ -1058,10 +1066,10 @@
   "showComponentDescriptions": true,
   "logsPanelFilter": "all",
   "selectedStylePropertyName": "",
-  "lvglPart": "INDICATOR",
+  "lvglPart": "MAIN",
   "lvglState": "DEFAULT",
   "lvglExpandedPropertiesGroup": [
-    "ARC"
+    "BACKGROUND"
   ],
   "showInactiveFlowsInDebugger": true,
   "globalFlowZoom": true,

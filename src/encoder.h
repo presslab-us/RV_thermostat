@@ -2,5 +2,5 @@
 
 #include <Arduino.h>
 
-void    init_encoder();
-int16_t get_encoder();
+void init_encoder();
+int get_encoder();

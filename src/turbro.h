@@ -1,6 +1,12 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
+#define MAX_TEMP 35
+#define MIN_TEMP 5
+
+#define TURBRO_ERR -1
+#define TURBRO_OK 1
+
 enum TURBRO_modes : uint8_t
 {
   MODE_OFF = 0,

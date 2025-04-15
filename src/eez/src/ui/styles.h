@@ -27,6 +27,11 @@ lv_style_t *get_style_but_dry_MAIN_DEFAULT();
 void add_style_but_dry(lv_obj_t *obj);
 void remove_style_but_dry(lv_obj_t *obj);
 
+// Style: but_fan
+lv_style_t *get_style_but_fan_MAIN_DEFAULT();
+void add_style_but_fan(lv_obj_t *obj);
+void remove_style_but_fan(lv_obj_t *obj);
+
 // Style: but_default
 lv_style_t *get_style_but_default_MAIN_DEFAULT();
 void add_style_but_default(lv_obj_t *obj);

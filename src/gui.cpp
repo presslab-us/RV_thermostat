@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <M5Dial.h>
+#include <M5Unified.h>
 #include <M5GFX.h>
 #include <esp_timer.h>
 #include <eez-framework.h> // for eez-framwork only
@@ -34,7 +34,7 @@ void my_display_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map
   uint32_t h = (area->y2 - area->y1 + 1);
 
   lv_draw_sw_rgb565_swap(px_map, w * h);
-  M5Dial.Display.pushImageDMA<uint16_t>(area->x1, area->y1, w, h, (uint16_t *)px_map);
+  M5.Display.pushImageDMA<uint16_t>(area->x1, area->y1, w, h, (uint16_t *)px_map);
   lv_disp_flush_ready(disp);
 }
 
@@ -45,8 +45,8 @@ uint32_t my_tick_function()
 
 void my_touchpad_read(lv_indev_t *drv, lv_indev_data_t *data)
 {
-  M5Dial.update();
-  auto count = M5Dial.Touch.getCount();
+  M5.update();
+  auto count = M5.Touch.getCount();
 
   if (count == 0)
   {
@@ -66,26 +66,25 @@ void my_knob_read(lv_indev_t *drv, lv_indev_data_t *data)
   static int32_t last_knob = 0;
   static bool last_but = false;
 
-  int32_t enc = M5Dial.Encoder.read();
-  // int32_t enc = get_encoder();
+  int32_t enc = get_encoder();
   if (last_knob - enc >= 4)
   {
     last_knob -= 4;
     enc_diff = -1;
     //data->enc_diff = -1;
-    M5Dial.Speaker.tone(2000, 10);
+    M5.Speaker.tone(2000, 10);
   }
   else if (last_knob - enc <= -4)
   {
     last_knob += 4;
     enc_diff = 1;
     //data->enc_diff = 1;
-    M5Dial.Speaker.tone(2200, 10);
+    M5.Speaker.tone(2200, 10);
   }
 
   if (M5.BtnA.isPressed() && !last_but)
   {
-    M5Dial.Speaker.tone(4000, 10);
+    M5.Speaker.tone(4000, 10);
     enc_but = true;
   }
   last_but = M5.BtnA.isPressed();
@@ -102,10 +101,8 @@ void my_knob_read(lv_indev_t *drv, lv_indev_data_t *data)
 
 void Gui::init()
 {
-  auto cfg = M5.config();
-  M5Dial.begin(cfg, true, false);
-  // M5Dial.begin(cfg, false, false);
-  // init_encoder();
+  M5.begin();
+  init_encoder();
   lv_init();
 
   lv_tick_set_cb(my_tick_function);
@@ -133,7 +130,7 @@ void Gui::init()
 
 void Gui::brightness(int val)
 {
-  M5Dial.Display.setBrightness(val);
+  M5.Display.setBrightness(val);
 }
 
 void Gui::update()

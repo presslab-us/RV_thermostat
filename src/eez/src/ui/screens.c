@@ -158,49 +158,51 @@ void create_screen_main() {
             // setpoint_cnt_text
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.setpoint_cnt_text = obj;
-            lv_obj_set_pos(obj, LV_PCT(-37), LV_PCT(-20));
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(-20));
+            lv_obj_set_size(obj, LV_PCT(30), LV_SIZE_CONTENT);
             lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_lbl_default(obj);
-            lv_obj_set_style_align(obj, LV_ALIGN_RIGHT_MID, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
         {
             // setpoint_cool_text
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.setpoint_cool_text = obj;
-            lv_obj_set_pos(obj, LV_PCT(-21), LV_PCT(-20));
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_obj_set_pos(obj, LV_PCT(15), LV_PCT(-18));
+            lv_obj_set_size(obj, LV_PCT(31), LV_SIZE_CONTENT);
             lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_lbl_default(obj);
-            lv_obj_set_style_align(obj, LV_ALIGN_RIGHT_MID, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_border_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][4]), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_border_width(obj, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][2]), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
         {
             // setpoint_heat_text
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.setpoint_heat_text = obj;
-            lv_obj_set_pos(obj, LV_PCT(-50), LV_PCT(-20));
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_obj_set_pos(obj, LV_PCT(-15), LV_PCT(-18));
+            lv_obj_set_size(obj, LV_PCT(31), LV_SIZE_CONTENT);
             lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_lbl_default(obj);
-            lv_obj_set_style_align(obj, LV_ALIGN_RIGHT_MID, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_border_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][4]), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_border_width(obj, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][0]), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
         {
             // actual_text
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.actual_text = obj;
-            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(-8));
+            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(-6));
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
@@ -239,6 +241,7 @@ void create_screen_main() {
             objects.button_settings = obj;
             lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(10));
             lv_obj_set_size(obj, LV_PCT(25), LV_PCT(25));
+            lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_but_default(obj);
             lv_obj_set_style_radius(obj, 20, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -476,7 +479,7 @@ void ui_create_groups() {
 static const char *screen_names[] = { "Main" };
 static const char *object_names[] = { "main", "setpoint_cool", "setpoint_heat", "setpoint_actual", "button_mode", "setpoint_background", "setpoint_cnt_text", "setpoint_cool_text", "setpoint_heat_text", "actual_text", "button_settings", "press_to_select", "press_to_confirm", "obj0" };
 static const char *group_names[] = { "encoder_group" };
-static const char *style_names[] = { "but_heat", "but_cool", "but_heatcool", "but_dry", "but_default", "lbl_highlight", "lbl_default" };
+static const char *style_names[] = { "but_heat", "but_cool", "but_heatcool", "but_dry", "but_fan", "but_default", "lbl_highlight", "lbl_default" };
 static const char *theme_names[] = { "Default" };
 
 uint32_t theme_colors[1][5] = {

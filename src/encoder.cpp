@@ -1,60 +1,61 @@
 #include <sdkconfig.h>
-#include <driver/pcnt.h>
+#include <driver/pulse_cnt.h>
 #include <driver/gpio.h>
 
 #include "encoder.h"
 
-int enc_offs = 0;
+static int enc_offs = 0;
+static pcnt_unit_handle_t pcnt_unit = NULL;
 
 /* clang-format: off */
 void init_encoder() {
-    pcnt_config_t enc_config = {
-        .pulse_gpio_num = GPIO_NUM_40,  //Rotary Encoder Chan A
-        .ctrl_gpio_num  = GPIO_NUM_41,  //Rotary Encoder Chan B
+    pinMode(GPIO_NUM_40, INPUT_PULLUP);
+    pinMode(GPIO_NUM_41, INPUT_PULLUP);
+//    gpio_pullup_en(GPIO_NUM_40);
+//    gpio_pullup_en(GPIO_NUM_41);
 
-        .lctrl_mode = PCNT_MODE_KEEP,     // Rising A on HIGH B = CW Step
-        .hctrl_mode = PCNT_MODE_REVERSE,  // Rising A on LOW B = CCW Step
-        .pos_mode   = PCNT_COUNT_INC,     //Count Only On Rising-Edges
-        .neg_mode   = PCNT_COUNT_DEC,     // Discard Falling-Edge
-
-        .counter_h_lim = INT16_MAX,
-        .counter_l_lim = INT16_MIN,
-
-        .unit    = PCNT_UNIT_0,
-        .channel = PCNT_CHANNEL_0,
+    pcnt_unit_config_t unit_config = {
+        .low_limit = INT16_MIN,
+        .high_limit = INT16_MAX,
     };
-    pcnt_unit_config(&enc_config);
+    ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &pcnt_unit));
 
-    enc_config.pulse_gpio_num = GPIO_NUM_41;
-    enc_config.ctrl_gpio_num  = GPIO_NUM_40;
-    enc_config.channel        = PCNT_CHANNEL_1;
-    enc_config.pos_mode       = PCNT_COUNT_DEC;  //Count Only On Falling-Edges
-    enc_config.neg_mode       = PCNT_COUNT_INC;  // Discard Rising-Edge
-    pcnt_unit_config(&enc_config);
+    pcnt_glitch_filter_config_t filter_config = {
+        .max_glitch_ns = 1000,
+    };
+    ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(pcnt_unit, &filter_config));
+    
+    pcnt_chan_config_t chan_a_config = {
+        .edge_gpio_num = GPIO_NUM_40,
+        .level_gpio_num = GPIO_NUM_41,
+    };
+    pcnt_channel_handle_t pcnt_chan_a = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(pcnt_unit, &chan_a_config, &pcnt_chan_a));
+    pcnt_chan_config_t chan_b_config = {
+        .edge_gpio_num = GPIO_NUM_41,
+        .level_gpio_num = GPIO_NUM_40,
+    };
 
-    pcnt_set_filter_value(PCNT_UNIT_0, 250);  // Filter Runt Pulses
+    pcnt_channel_handle_t pcnt_chan_b = NULL;
+    ESP_ERROR_CHECK(pcnt_new_channel(pcnt_unit, &chan_b_config, &pcnt_chan_b));
 
-    pcnt_filter_enable(PCNT_UNIT_0);
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_chan_a, PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_chan_a, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
+    ESP_ERROR_CHECK(pcnt_channel_set_edge_action(pcnt_chan_b, PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE));
+    ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_chan_b, PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE));
 
-    gpio_pullup_en(GPIO_NUM_40);
-    gpio_pullup_en(GPIO_NUM_41);
+    ESP_ERROR_CHECK(pcnt_unit_enable(pcnt_unit));
+    ESP_ERROR_CHECK(pcnt_unit_clear_count(pcnt_unit));
+    ESP_ERROR_CHECK(pcnt_unit_start(pcnt_unit));
 
-    pcnt_counter_pause(PCNT_UNIT_0);  // Initial PCNT init
-    pcnt_counter_clear(PCNT_UNIT_0);
-    pcnt_counter_resume(PCNT_UNIT_0);
-
-    if (digitalRead(GPIO_NUM_40)) // FIXME doesn't initialize encoder offset correctly
-    {
-        enc_offs |= 1;
-    }
-    if (digitalRead(GPIO_NUM_41))
-    {
-        enc_offs |= 2;
-    }
+    // Set offset according to intial encoder position
+    if (!digitalRead(GPIO_NUM_40) && digitalRead(GPIO_NUM_41)) enc_offs = 1;
+    else if (!digitalRead(GPIO_NUM_40) && !digitalRead(GPIO_NUM_41)) enc_offs = 2;
+    else if (digitalRead(GPIO_NUM_40) && !digitalRead(GPIO_NUM_41)) enc_offs = 3;
 }
 
-int16_t get_encoder() {
-    int16_t count;
-    pcnt_get_counter_value(PCNT_UNIT_0, &count);
+int get_encoder() {
+    int count = 0;
+    pcnt_unit_get_count(pcnt_unit, &count);
     return count + enc_offs;
 }

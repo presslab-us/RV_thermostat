@@ -26,7 +26,7 @@ int TURBRO::init()
     _port.read(); // clear buffer
   }
 
-  return ERR_OK;
+  return 0;
 }
 
 int TURBRO::update()
@@ -36,7 +36,7 @@ int TURBRO::update()
 
   if (millis() - comm_millis < 1000)
   {
-    return ERR_OK;
+    return 0;
   }
 
   if (millis() - comm_millis > 2000)
@@ -142,7 +142,7 @@ int TURBRO::update()
   _comp_rps = -1;
 
   // check if packet is valid
-  if (rx_packet.preamble[0] == 0xAA && rx_packet.preamble[1] == 0x01 && chksum == rx_packet.chksum && rx_packet.postamble == 0x77)
+  if (rx_packet.preamble[0] == 0xAA && rx_packet.preamble[1] == 0x01 && chksum == rx_packet.chksum && rx_packet.postamble == 0x77 && rx_packet.temp_evap_in < 0x40 + 80)
   {
     _ac_temp = (float)rx_packet.temp_evap_in - 0x40;
     _comp_rps = rx_packet.comp_act;
@@ -196,7 +196,7 @@ int TURBRO::update()
     {
       _action = ACTION_HEATING;
     }
-    return ERR_OK;
+    return TURBRO_OK;
   }
-  return ERR_CONN;
+  return TURBRO_ERR;
 }

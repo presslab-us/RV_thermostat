@@ -26,7 +26,7 @@ int Furnace::init()
   bmp280.setTimeStandby(TIME_STANDBY_2000MS);     // Set the standby time to 2 seconds
   bmp280.startNormalConversion();                 // Start BMP280 continuous conversion in NORMAL_MODE
   */
-  return ERR_OK;
+  return 0;
 }
 
 int Furnace::update()
@@ -34,7 +34,7 @@ int Furnace::update()
   static uint32_t update_millis = millis();
   if (millis() - update_millis < 1000)
   {
-    return ERR_OK;
+    return 0;
   }
 
   // below runs at 1 Hz
@@ -62,5 +62,5 @@ int Furnace::update()
     _relay_on = false;
   }
   relay.relayWrite(RLY_FURNACE, _relay_on);
-  return ERR_OK;
+  return 0;
 }
