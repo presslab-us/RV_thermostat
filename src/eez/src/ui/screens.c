@@ -287,28 +287,30 @@ void create_screen_main() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.press_to_select = obj;
             lv_obj_set_pos(obj, 0, 84);
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_obj_set_size(obj, LV_PCT(50), LV_PCT(16));
             lv_obj_add_event_cb(obj, event_handler_cb_main_press_to_select, LV_EVENT_ALL, flowState);
             lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_PRESS_LOCK);
             add_style_lbl_default(obj);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][4]), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "press to select");
+            lv_label_set_text(obj, "\npress to select");
         }
         {
             // press_to_confirm
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.press_to_confirm = obj;
             lv_obj_set_pos(obj, 0, 84);
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_obj_set_size(obj, LV_PCT(50), LV_PCT(16));
             lv_obj_add_event_cb(obj, event_handler_cb_main_press_to_confirm, LV_EVENT_ALL, flowState);
             lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_PRESS_LOCK);
             add_style_lbl_default(obj);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][4]), LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "press to confirm");
+            lv_label_set_text(obj, "\npress to confirm");
         }
     }
     
