@@ -22,7 +22,8 @@
 float temperature, humidity;
 float setpoint_low, setpoint_high;
 volatile int mode, fan;
-volatile bool send_update = false, aux_heat;
+volatile bool send_update = false;
+volatile int aux_heat;
 String last_action;
 
 Gui gui;
@@ -69,14 +70,21 @@ void set_high(float &low, float &high)
 
 float get_actual(void)
 {
-  if (aux_heat || turbro.get_temp() == -100)
+  return furnace.get_temp();
+}
+
+int get_relative_setpoint(int setpoint)
+{
+  static float temp = 0;
+  float actual = get_actual();
+
+  if (actual - temp > 0.2 || actual - temp < -0.2) // give +/- 0.2 C of hysteresis for noise
   {
-    return furnace.get_temp();
+    temp = actual;
   }
-  else
-  {
-    return turbro.get_temp();
-  }
+
+  // Offset the TURBRO measured temp by the difference from the setpoint and actual temp, and multiplying by the gain
+  return (setpoint - temp) * conf["therm_ac_gain"].toFloat() + turbro.get_temp() + 0.5;
 }
 
 // Handler function for Home page
@@ -95,7 +103,7 @@ void handleRoot()
 void setup()
 {
   sleep(5);
-  LOG_I("Starting..\n");
+  log_i("Starting..\n");
   ESP_ERROR_CHECK(esp_task_wdt_deinit());
   esp_task_wdt_config_t twdt_config = {
     .timeout_ms = 120*1000,
@@ -121,7 +129,7 @@ void setup()
   bool bConn = confHelper.connectToNetwork(15000);
   if (!bConn)
   {
-    LOG_E("WiFi client connect failed.\n");
+    log_e("WiFi client connect failed.\n");
   }
 
   WiFi.enableIPv6();
@@ -129,7 +137,7 @@ void setup()
   //confHelper.setReconnect(true);
   WiFi.setAutoReconnect(true);
   WiFi.setTxPower(WIFI_POWER_5dBm);
-  WiFi.setSleep(false);
+  //WiFi.setSleep(false);
   // Start AP to fix wifi credentials
   conf.setup(server, !bConn);
 
@@ -182,48 +190,60 @@ void setup()
   // Subscribe to a topic pattern and attach a callback
   mqtt->subscribe(conf["mqtt_topic"] + "/mode/set", [](const char *payload)
                   {
-    if (!strcasecmp("off", payload)) { mode = 0; }
-    else if (!strcasecmp("heat_cool", payload)) { mode = 1; }
-    else if (!strcasecmp("cool", payload)) { mode = 2; }
-    else if (!strcasecmp("dry", payload)) { mode = 3; }
-    else if (!strcasecmp("fan_only", payload)) { mode = 4; }
-    else if (!strcasecmp("heat", payload)) { mode = 5; }
-    send_update = true; });
+    if (!strcasecmp(TURBRO::mode_lookup[TURBRO::MODE_OFF], payload)) { mode = TURBRO::MODE_OFF; }
+    else if (!strcasecmp(TURBRO::mode_lookup[TURBRO::MODE_AUTO], payload)) { mode = TURBRO::MODE_AUTO; }
+    else if (!strcasecmp(TURBRO::mode_lookup[TURBRO::MODE_COOL], payload)) { mode = TURBRO::MODE_COOL; }
+    else if (!strcasecmp(TURBRO::mode_lookup[TURBRO::MODE_DRY], payload)) { mode = TURBRO::MODE_DRY; }
+    else if (!strcasecmp(TURBRO::mode_lookup[TURBRO::MODE_FAN], payload)) { mode = TURBRO::MODE_FAN; }
+    else if (!strcasecmp(TURBRO::mode_lookup[TURBRO::MODE_HEAT], payload)) { mode = TURBRO::MODE_HEAT; }
+    send_update = true; }, 16);
   mqtt->subscribe(conf["mqtt_topic"] + "/fan/set", [](const char *payload)
                   {
-    if (!strcasecmp("auto", payload)) { fan = 4; }
-    else if (!strcasecmp("low", payload)) { fan = 1; }
-    else if (!strcasecmp("medium", payload)) { fan = 2; }
-    else if (!strcasecmp("high", payload)) { fan = 3; }
-    send_update = true; });
+    if (!strcasecmp(TURBRO::fan_lookup[TURBRO::FAN_AUTO], payload)) { fan = TURBRO::FAN_AUTO; }
+    else if (!strcasecmp(TURBRO::fan_lookup[TURBRO::FAN_LOW], payload)) { fan = TURBRO::FAN_LOW; }
+    else if (!strcasecmp(TURBRO::fan_lookup[TURBRO::FAN_MED], payload)) { fan = TURBRO::FAN_MED; }
+    else if (!strcasecmp(TURBRO::fan_lookup[TURBRO::FAN_HIGH], payload)) { fan = TURBRO::FAN_HIGH; }
+    send_update = true; }, 16);
   mqtt->subscribe(conf["mqtt_topic"] + "/setpoint_low/set", [](const char *payload)
                   {
                     setpoint_low = atof(payload);
                     set_low(setpoint_low, setpoint_high);
-                    send_update = true; });
+                    send_update = true; }, 16);
   mqtt->subscribe(conf["mqtt_topic"] + "/setpoint_high/set", [](const char *payload)
                   {
                     setpoint_high = atof(payload);
                     set_high(setpoint_low, setpoint_high);
-                    send_update = true; });
+                    send_update = true; }, 16);
   mqtt->subscribe(conf["mqtt_topic"] + "/aux/set", [](const char *payload)
                   {
-    aux_heat = !strcasecmp("ON", payload) ? true : false;
-    send_update = true; });
+    if (!strcasecmp(Furnace::aux_lookup[Furnace::AUX_NORMAL], payload)) { aux_heat = Furnace::AUX_NORMAL; }
+    else if (!strcasecmp(Furnace::aux_lookup[Furnace::AUX_ONLY], payload)) { aux_heat = Furnace::AUX_ONLY; }
+    else if (!strcasecmp(Furnace::aux_lookup[Furnace::AUX_QUICKHEAT], payload)) { aux_heat = Furnace::AUX_QUICKHEAT; }
+    else if (!strcasecmp(Furnace::aux_lookup[Furnace::AUX_NEVER], payload)) { aux_heat = Furnace::AUX_NEVER; }
+    send_update = true; }, 16);
   mqtt->subscribe(conf["mqtt_topic"] + "/brightness/set", [](const char *payload)
                   {
     conf["gui_brightness"] = payload;
-    gui.brightness(conf["gui_brightness"].toInt()); });
+    gui.brightness(conf["gui_brightness"].toInt()); }, 16);
 
   // Start the client
   mqtt->begin();
+
+  xTaskCreatePinnedToCore([](void *)
+                  {
+                    while(1)
+                    {
+                      gui.update();
+                      delay(10);
+                    }
+                  },
+                  "gui_task", 10000, NULL, 0, NULL, 0);
 }
 
 void loop()
 {
   static bool ac_comm_failed = false;
   static bool ac_temp_failed = false;
-  static int ac_comm_failed_ctr = 0;
   int ac_mode = 0;
   static uint32_t save_millis = 0, ac_fail_millis = 0;
 
@@ -252,97 +272,135 @@ void loop()
   }
 
   bool furn_mode = false;
-  if (aux_heat)
+  static bool cool = false, heated = false;
+  float threshold = heated ? setpoint_high + 1 : setpoint_high; // increase hysteresis if we have heated
+  static uint32_t cool_timer = 0;
+  static float last_setpoint_high = 0;
+  #define COOL_TIMER_ON (conf["cool_timer"].toInt() * 60 * 1000)
+  #define COOL_TIMER_DELAY (30 * 1000)
+  #define COOL_TIMER_OFF (COOL_TIMER_ON + COOL_TIMER_DELAY)
+  #define COOL_TIMER_BAND 6
+  static enum { COOLING_OFF, COOLING_START, COOLING, COOLING_STOP } cool_state = COOLING_OFF;
+  switch (mode)
   {
-    ac_mode = mode;
-    switch (mode)
+  // don't use the AC auto mode, instead use cool or heat mode depending on actual temp
+  case TURBRO::MODE_AUTO:
+    static int last_state = 0;
+    if (last_state != cool_state)
     {
-    case MODE_AUTO:
-      ac_mode = MODE_COOL; // change from heat/cool to cool
-      furn_mode = true;
-      break;
-    case MODE_HEAT:
-      ac_mode = MODE_OFF; // disable AC unit for heat only
-      furn_mode = true;
-      break;
+      last_state = cool_state;
+      log_i("state %d\n", cool_state);   
     }
-    ac_setpoint = setpoint_high;
-  }
-  else
-  {
-    static bool cool = false;
-    switch (mode)
+    if (last_setpoint_high != setpoint_high) // reset cool_timer when changing setpoint (or mode)
     {
-    // don't use the AC auto mode, instead use cool or heat mode depending on actual temp
-    case MODE_AUTO:
-      if (turbro.get_temp() > setpoint_high) // cool mode runs fan all the time. only use if within hysteresis
+      last_setpoint_high = setpoint_high;
+      cool_timer = millis() - COOL_TIMER_ON;
+    }
+    else if (cool_state == COOLING_OFF && get_actual() > threshold) // cool mode runs fan all the time. only use if within hysteresis
+    {
+      cool_state = COOLING_START;
+      cool_timer = millis();
+    }
+    else
+    {
+      if (cool_state == COOLING_OFF)
+      {
+        if (turbro.get_action() == TURBRO::ACTION_COOLING)
+        {
+          cool = true;
+          cool_state = COOLING;
+        }
+      }
+      else if (cool_state == COOLING_START)
       {
         cool = true;
+        heated = false;
+        if (millis() - cool_timer > COOL_TIMER_DELAY)
+        {
+          cool_state = COOLING;
+        }
       }
-      else if (turbro.get_temp() < setpoint_high)
+      else if (cool_state == COOLING)
       {
-        cool = false;
+        if (turbro.get_action() != TURBRO::ACTION_COOLING)
+        {
+          cool_state = COOLING_STOP;
+          cool_timer = millis();
+        }
       }
-
-      if (cool)
+      else if (cool_state == COOLING_STOP)
       {
-        ac_mode = MODE_COOL;
-        ac_setpoint = setpoint_high;
+        if (millis() - cool_timer > COOL_TIMER_DELAY)
+        {
+          cool = false;
+          cool_state = COOLING_OFF;
+          cool_timer = millis();
+        }
       }
-      else
-      {
-        ac_mode = MODE_HEAT;
-        ac_setpoint = setpoint_low;
-      }
-      furn_mode = ac_comm_failed || ac_temp_failed;
-      break;
-    case MODE_HEAT:
-      ac_mode = mode;
-      ac_setpoint = setpoint_low;
-      furn_mode = ac_comm_failed || ac_temp_failed;
-      break;
-    default:
-      ac_mode = mode;
-      ac_setpoint = setpoint_high;
-      break;
     }
+
+    if (turbro.get_action() == TURBRO::ACTION_HEATING)
+    {
+      heated = true;
+    }
+
+    if (cool)
+    {
+      ac_mode = TURBRO::MODE_COOL;
+      ac_setpoint = get_relative_setpoint(setpoint_high);
+    }
+    else
+    {
+      furn_mode = (ac_comm_failed || ac_temp_failed && aux_heat != Furnace::AUX_NEVER) || aux_heat == Furnace::AUX_ONLY || aux_heat == Furnace::AUX_QUICKHEAT;
+      ac_mode = (aux_heat == Furnace::AUX_ONLY) ? TURBRO::MODE_OFF : TURBRO::MODE_HEAT;
+      ac_setpoint = get_relative_setpoint(setpoint_low);
+    }
+    break;
+  case TURBRO::MODE_HEAT:
+    heated = false;
+    cool = false;
+    ac_setpoint = get_relative_setpoint(setpoint_low);
+    furn_mode = (ac_comm_failed || ac_temp_failed && aux_heat != Furnace::AUX_NEVER) || aux_heat == Furnace::AUX_ONLY || aux_heat == Furnace::AUX_QUICKHEAT;
+    ac_mode = (aux_heat == Furnace::AUX_ONLY) ? TURBRO::MODE_OFF : mode;
+    last_setpoint_high = -1;
+    break;
+  default:
+    heated = false;
+    cool = false;
+    ac_mode = mode;
+    ac_setpoint = get_relative_setpoint(setpoint_high);
+    last_setpoint_high = -1;
+    break;
+  }
+  if (turbro.get_action() != TURBRO::ACTION_OFF && turbro.get_comp_rps() > 0 && turbro.get_comp_rps() < conf["therm_ac_min_rps"].toInt())
+  {
+    log_i("Compressor below min speed\n");
+    ac_mode = TURBRO::MODE_OFF; // Stop running when compressor is running too slow; this blocks the lowest level which has a booming resonance sound.
   }
   furnace.set_parms(furn_mode, setpoint_low, conf["therm_furn_deadband"].toFloat());
   turbro.set_parms(ac_mode, fan, ac_setpoint);
 
   furnace.update();
   int retval = turbro.update();
-  
-  if (retval == TURBRO_ERR)
+
+  if (retval == TURBRO::RET_RXERR)
   {
-    log_i("turbro retval: %d\n", retval);
-    if (ac_comm_failed_ctr >= 3)
-    {
-      ac_comm_failed = true;
-    }
-    else
-    {
-      ac_comm_failed_ctr ++;
-    }
+    log_e("comm failed\n");
+    ac_comm_failed = true;
   }
-  else if (retval == TURBRO_OK)
+  else if (retval == TURBRO::RET_RXOK)
   {
-    ac_comm_failed_ctr = 0;
+    if (ac_comm_failed) log_e("comm recover\n");
     ac_comm_failed = false;
 
-    if (mode == MODE_AUTO || mode == MODE_HEAT)
+    if (mode == TURBRO::MODE_AUTO || mode == TURBRO::MODE_HEAT)
     {
-      if (ac_setpoint <= turbro.get_temp())
+      if (setpoint_low - 2 <= get_actual()) // allow for up to 2 C
       {
-        ac_fail_millis = 0;
         ac_temp_failed = false;
-      }
-      else if (ac_fail_millis == 0)
-      {
         ac_fail_millis = millis();
       }
-
-      if (ac_fail_millis && (millis() - ac_fail_millis > conf["therm_ac_fail_temp_time"].toInt() * 1000))
+      else if (!ac_temp_failed && millis() - ac_fail_millis > (uint32_t)conf["therm_ac_fail_temp_time"].toInt() * 60000UL)
       {
         ac_temp_failed = true;
       }
@@ -350,6 +408,7 @@ void loop()
     else
     {
       ac_temp_failed = false;
+      ac_fail_millis = millis();
     }
   }
 
@@ -359,8 +418,6 @@ void loop()
 
     send_update = false;
     mqtt_millis = millis();
-
-    state_json["temp"] = (int)(get_actual() + 0.5);
 
     if (furnace.get_action())
     {
@@ -385,21 +442,27 @@ void loop()
     state_json["furn_action"] = TURBRO::action_lookup[furnace.get_action()];
     state_json["setpoint_low"] = setpoint_low;
     state_json["setpoint_high"] = setpoint_high;
-    state_json["aux_heat"] = aux_heat ? "ON" : "OFF";
+    state_json["aux_heat"] = Furnace::aux_lookup[aux_heat];
     state_json["ac_temp"] = turbro.get_temp();
     state_json["ac_comp_rps"] = turbro.get_comp_rps();
-    state_json["sht_temp"] = (int)(furnace.get_temp() * 100.0) / 100.0;
+    state_json["ac_setpoint"] = ac_setpoint;
+    state_json["sht_temp"] = (int)(get_actual() * 100.0) / 100.0;
     state_json["sht_rh"] = (int)(furnace.get_hum() * 10.0) / 10.0;
-    state_json["diag"] = ac_setpoint;
-
+    state_json["temp"] = (int)(get_actual() * 10.0) / 10.0;
+    
     auto publish = mqtt->begin_publish(conf["mqtt_topic"] + "/state", measureJson(state_json));
     serializeJson(state_json, publish);
     publish.send();
+    if (WiFi.status() == WL_IDLE_STATUS)
+    {
+      sleep(2);
+      WiFi.begin();
+    }
+    //log_i("WiFi status: %d\n", WiFi.status());
   }
 
-  server.handleClient();
   mqtt->loop();
-  gui.update();
+  server.handleClient();
 
   esp_task_wdt_reset();
 }

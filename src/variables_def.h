@@ -30,20 +30,37 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
           range: )~" QUOTE(MIN_TEMP) ", " QUOTE(MAX_TEMP) R"~(, 1
           default: 20
       - therm_aux:
-          label: Prefer aux heat
-          checked: False
+          label: Aux heat mode
+          options:
+            - Normal: 0
+            - Only: 1
+            - Quick Heat: 2
+            - Never: 3
+          default: Off
+      - therm_ac_gain:
+          label: AC setpoint gain
+          range: 1, 4, 0.1
+          default: 1.5
       - therm_ac_fail_temp_time:
-          label: AC fail for temperature time (seconds)
-          range: 60, 7200, 1
+          label: AC fail for temperature time (mins)
+          range: 30, 240, 1
           default: 1800
+      - therm_ac_min_rps:
+          label: AC minimum compressor speed
+          range: 10, 40, 1
+          default: 30
       - therm_furn_deadband:
           label: Furnace deadband *C
           default: 1.5
           attribs: min=0.1 max=5 step=0.1
       - therm_setpoint_deadband:
-          labal: Setpoint deadband *C
+          label: Setpoint deadband *C
           range: 1, 5, 1
           default: 2
+      - cool_timer:
+          label: Periodic cool timer for sampling
+          range: 1, 30, 1
+          default: 5
     Wifi settings:
       - st_ssid:
           default: ssid

@@ -11,6 +11,8 @@ SensirionI2cSht4x sht40; // address 0x44
 // BMP280_DEV bmp280(SDA_GPIO, SCL_GPIO, Wire); // address 0x77
 UNIT_4RELAY relay; // address 0x26
 
+const char *Furnace::aux_lookup[] = {"normal", "only", "quick heat", "never"};
+
 int Furnace::init()
 {
   Wire.begin(_sda_pin, _scl_pin, 100000);
@@ -46,8 +48,8 @@ int Furnace::update()
   {
     update_millis += 1000;
   }
-  sht40.measureLowestPrecision(_temp, _hum);
-
+//  sht40.measureLowestPrecision(_temp, _hum);
+  sht40.measureMediumPrecision(_temp, _hum);
   // bang-bang controller
   if (_mode == 0)
   {

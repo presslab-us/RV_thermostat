@@ -19,6 +19,7 @@ lv_obj_t *tick_value_change_obj;
 static void event_handler_cb_main_main(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = lv_event_get_user_data(e);
+    (void)flowState;
     
     if (event == LV_EVENT_SCREEN_LOAD_START) {
         // group: encoder_group
@@ -31,14 +32,13 @@ static void event_handler_cb_main_main(lv_event_t *e) {
 static void event_handler_cb_main_setpoint_cool(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = lv_event_get_user_data(e);
+    (void)flowState;
     
     if (event == LV_EVENT_VALUE_CHANGED) {
         lv_obj_t *ta = lv_event_get_target(e);
         if (tick_value_change_obj != ta) {
             int32_t value = lv_arc_get_value(ta);
-            if (tick_value_change_obj != ta) {
-                assignIntegerProperty(flowState, 2, 4, value, "Failed to assign Value in Arc widget");
-            }
+            assignIntegerProperty(flowState, 2, 4, value, "Failed to assign Value in Arc widget");
         }
     }
     
@@ -51,14 +51,13 @@ static void event_handler_cb_main_setpoint_cool(lv_event_t *e) {
 static void event_handler_cb_main_setpoint_heat(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = lv_event_get_user_data(e);
+    (void)flowState;
     
     if (event == LV_EVENT_VALUE_CHANGED) {
         lv_obj_t *ta = lv_event_get_target(e);
         if (tick_value_change_obj != ta) {
             int32_t value = lv_arc_get_value(ta);
-            if (tick_value_change_obj != ta) {
-                assignIntegerProperty(flowState, 3, 4, value, "Failed to assign Value in Arc widget");
-            }
+            assignIntegerProperty(flowState, 3, 4, value, "Failed to assign Value in Arc widget");
         }
     }
 }
@@ -66,14 +65,13 @@ static void event_handler_cb_main_setpoint_heat(lv_event_t *e) {
 static void event_handler_cb_main_setpoint_actual(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = lv_event_get_user_data(e);
+    (void)flowState;
     
     if (event == LV_EVENT_VALUE_CHANGED) {
         lv_obj_t *ta = lv_event_get_target(e);
         if (tick_value_change_obj != ta) {
             int32_t value = lv_arc_get_value(ta);
-            if (tick_value_change_obj != ta) {
-                assignIntegerProperty(flowState, 4, 3, value, "Failed to assign Value in Arc widget");
-            }
+            assignIntegerProperty(flowState, 4, 3, value, "Failed to assign Value in Arc widget");
         }
     }
 }
@@ -81,6 +79,7 @@ static void event_handler_cb_main_setpoint_actual(lv_event_t *e) {
 static void event_handler_cb_main_button_mode(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     void *flowState = lv_event_get_user_data(e);
+    (void)flowState;
     
     if (event == LV_EVENT_RELEASED) {
         e->user_data = (void *)0;
@@ -90,6 +89,7 @@ static void event_handler_cb_main_button_mode(lv_event_t *e) {
 
 void create_screen_main() {
     void *flowState = getFlowState(0, 0);
+    (void)flowState;
     lv_obj_t *obj = lv_obj_create(0);
     objects.main = obj;
     lv_obj_set_pos(obj, 0, 0);
@@ -143,7 +143,7 @@ void create_screen_main() {
             objects.setpoint_actual = obj;
             lv_obj_set_pos(obj, LV_PCT(5), LV_PCT(5));
             lv_obj_set_size(obj, LV_PCT(90), LV_PCT(90));
-            lv_arc_set_range(obj, 5, 35);
+            lv_arc_set_range(obj, 50, 350);
             lv_obj_add_event_cb(obj, event_handler_cb_main_setpoint_actual, LV_EVENT_ALL, flowState);
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_CLICK_FOCUSABLE);
             lv_obj_set_style_arc_opa(obj, 0, LV_PART_INDICATOR | LV_STATE_DEFAULT);
@@ -160,11 +160,11 @@ void create_screen_main() {
             objects.setpoint_cnt_text = obj;
             lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(-20));
             lv_obj_set_size(obj, LV_PCT(30), LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_lbl_default(obj);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "");
         }
         {
             // setpoint_cool_text
@@ -172,7 +172,6 @@ void create_screen_main() {
             objects.setpoint_cool_text = obj;
             lv_obj_set_pos(obj, LV_PCT(15), LV_PCT(-18));
             lv_obj_set_size(obj, LV_PCT(31), LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_lbl_default(obj);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -181,6 +180,7 @@ void create_screen_main() {
             lv_obj_set_style_border_width(obj, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][2]), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "");
         }
         {
             // setpoint_heat_text
@@ -188,7 +188,6 @@ void create_screen_main() {
             objects.setpoint_heat_text = obj;
             lv_obj_set_pos(obj, LV_PCT(-15), LV_PCT(-18));
             lv_obj_set_size(obj, LV_PCT(31), LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_lbl_default(obj);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -197,22 +196,23 @@ void create_screen_main() {
             lv_obj_set_style_border_width(obj, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][0]), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "");
         }
         {
             // actual_text
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.actual_text = obj;
-            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(-6));
+            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(-8));
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "");
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICK_FOCUSABLE);
             add_style_lbl_default(obj);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_text_font(obj, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "");
         }
         {
             // button_mode
-            lv_obj_t *obj = lv_btn_create(parent_obj);
+            lv_obj_t *obj = lv_button_create(parent_obj);
             objects.button_mode = obj;
             lv_obj_set_pos(obj, LV_PCT(-18), LV_PCT(10));
             lv_obj_set_size(obj, LV_PCT(25), LV_PCT(25));
@@ -228,16 +228,16 @@ void create_screen_main() {
                     objects.obj0 = obj;
                     lv_obj_set_pos(obj, 0, 0);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-                    lv_label_set_text(obj, "");
                     add_style_lbl_default(obj);
                     lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_obj_set_style_text_font(obj, &ui_font_material_design_48, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text(obj, "");
                 }
             }
         }
         {
             // button_settings
-            lv_obj_t *obj = lv_btn_create(parent_obj);
+            lv_obj_t *obj = lv_button_create(parent_obj);
             objects.button_settings = obj;
             lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(10));
             lv_obj_set_size(obj, LV_PCT(25), LV_PCT(25));
@@ -253,10 +253,10 @@ void create_screen_main() {
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     lv_obj_set_pos(obj, 0, 0);
                     lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-                    lv_label_set_text(obj, "\ue8b8");
                     add_style_lbl_default(obj);
                     lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_obj_set_style_text_font(obj, &ui_font_material_design_48, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text(obj, "\ue8b8");
                 }
             }
         }
@@ -266,10 +266,10 @@ void create_screen_main() {
             objects.press_to_select = obj;
             lv_obj_set_pos(obj, 0, 84);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "press to select");
             add_style_lbl_default(obj);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][4]), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "press to select");
         }
         {
             // press_to_confirm
@@ -277,10 +277,10 @@ void create_screen_main() {
             objects.press_to_confirm = obj;
             lv_obj_set_pos(obj, 0, 84);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text(obj, "press to confirm");
             add_style_lbl_default(obj);
             lv_obj_set_style_text_color(obj, lv_color_hex(theme_colors[eez_flow_get_selected_theme_index()][4]), LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "press to confirm");
         }
     }
     
@@ -289,6 +289,7 @@ void create_screen_main() {
 
 void tick_screen_main() {
     void *flowState = getFlowState(0, 0);
+    (void)flowState;
     {
         bool new_val = evalBooleanProperty(flowState, 2, 3, "Failed to evaluate Hidden flag");
         bool cur_val = lv_obj_has_flag(objects.setpoint_cool, LV_OBJ_FLAG_HIDDEN);
@@ -477,7 +478,7 @@ void ui_create_groups() {
 }
 
 static const char *screen_names[] = { "Main" };
-static const char *object_names[] = { "main", "setpoint_cool", "setpoint_heat", "setpoint_actual", "button_mode", "setpoint_background", "setpoint_cnt_text", "setpoint_cool_text", "setpoint_heat_text", "actual_text", "button_settings", "press_to_select", "press_to_confirm", "obj0" };
+static const char *object_names[] = { "main", "setpoint_cool", "button_mode", "setpoint_background", "setpoint_heat", "setpoint_actual", "setpoint_cnt_text", "setpoint_cool_text", "setpoint_heat_text", "actual_text", "button_settings", "press_to_select", "press_to_confirm", "obj0" };
 static const char *group_names[] = { "encoder_group" };
 static const char *style_names[] = { "but_heat", "but_cool", "but_heatcool", "but_dry", "but_fan", "but_default", "lbl_highlight", "lbl_default" };
 static const char *theme_names[] = { "Default" };

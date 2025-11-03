@@ -179,7 +179,7 @@ void Gui::update()
     enc_millis = millis();
     switch (mode)
     {
-    case MODE_AUTO:
+    case TURBRO::MODE_AUTO:
       if (enc_state == ENC_IDLE || enc_state == ENC_SELECT_HI || enc_state == ENC_SELECT_LO)
       {
         if (enc_diff > 0)
@@ -202,7 +202,7 @@ void Gui::update()
         set_high(setpoint_unval_low, setpoint_unval_high);
       }
       break;
-    case MODE_HEAT:
+    case TURBRO::MODE_HEAT:
       if (enc_state == ENC_IDLE)
       {
         setpoint_unval_high = setpoint_high;
@@ -212,8 +212,8 @@ void Gui::update()
       setpoint_unval_low += enc_diff;
       set_low(setpoint_unval_low, setpoint_unval_high);
       break;
-    case MODE_COOL:
-    case MODE_DRY:
+    case TURBRO::MODE_COOL:
+    case TURBRO::MODE_DRY:
       if (enc_state == ENC_IDLE)
       {
         setpoint_unval_high = setpoint_high;
@@ -230,7 +230,7 @@ void Gui::update()
 
 int32_t get_var_actual()
 {
-  return (int)(get_actual() + 0.5);
+  return (int)(get_actual() * 10);
 }
 
 void set_var_actual(int32_t value)

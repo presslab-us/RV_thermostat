@@ -18,10 +18,10 @@ void ui_create_groups();
 typedef struct _objects_t {
     lv_obj_t *main;
     lv_obj_t *setpoint_cool;
-    lv_obj_t *setpoint_heat;
-    lv_obj_t *setpoint_actual;
     lv_obj_t *button_mode;
     lv_obj_t *setpoint_background;
+    lv_obj_t *setpoint_heat;
+    lv_obj_t *setpoint_actual;
     lv_obj_t *setpoint_cnt_text;
     lv_obj_t *setpoint_cool_text;
     lv_obj_t *setpoint_heat_text;
