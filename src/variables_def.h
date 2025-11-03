@@ -39,8 +39,12 @@ const char* VARIABLES_DEF_YAML PROGMEM = R"~(
           default: Off
       - therm_ac_gain:
           label: AC setpoint gain
-          range: 1, 4, 0.1
-          default: 1.5
+          range: 1, 5, 0.5
+          default: 3
+      - therm_ac_fail_temp:
+          label: AC fail for temperature diff *C
+          range: 0.5, 3, 0.1
+          default: 1
       - therm_ac_fail_temp_time:
           label: AC fail for temperature time (mins)
           range: 30, 240, 1

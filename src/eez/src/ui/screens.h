@@ -19,6 +19,8 @@ typedef struct _objects_t {
     lv_obj_t *main;
     lv_obj_t *setpoint_cool;
     lv_obj_t *button_mode;
+    lv_obj_t *press_to_select;
+    lv_obj_t *press_to_confirm;
     lv_obj_t *setpoint_background;
     lv_obj_t *setpoint_heat;
     lv_obj_t *setpoint_actual;
@@ -27,8 +29,6 @@ typedef struct _objects_t {
     lv_obj_t *setpoint_heat_text;
     lv_obj_t *actual_text;
     lv_obj_t *button_settings;
-    lv_obj_t *press_to_select;
-    lv_obj_t *press_to_confirm;
     lv_obj_t *obj0;
 } objects_t;
 

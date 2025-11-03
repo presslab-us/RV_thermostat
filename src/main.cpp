@@ -395,7 +395,7 @@ void loop()
 
     if (mode == TURBRO::MODE_AUTO || mode == TURBRO::MODE_HEAT)
     {
-      if (setpoint_low - 2 <= get_actual()) // allow for up to 2 C
+      if ((float)setpoint_low - conf["therm_ac_fail_temp"].toFloat() <= get_actual()) // if actual temp is greater than fail_temp away then start counting
       {
         ac_temp_failed = false;
         ac_fail_millis = millis();
@@ -443,8 +443,8 @@ void loop()
     state_json["setpoint_low"] = setpoint_low;
     state_json["setpoint_high"] = setpoint_high;
     state_json["aux_heat"] = Furnace::aux_lookup[aux_heat];
-    state_json["ac_temp"] = turbro.get_temp();
     state_json["ac_comp_rps"] = turbro.get_comp_rps();
+    state_json["ac_temp"] = turbro.get_temp();
     state_json["ac_setpoint"] = ac_setpoint;
     state_json["sht_temp"] = (int)(get_actual() * 100.0) / 100.0;
     state_json["sht_rh"] = (int)(furnace.get_hum() * 10.0) / 10.0;

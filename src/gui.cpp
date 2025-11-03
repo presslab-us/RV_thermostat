@@ -10,6 +10,8 @@
 #include "turbro.h"
 #include "gui.h"
 
+#include "./eez/src/ui/actions.h"
+
 extern float temperature, humidity;
 extern float setpoint_low, setpoint_high;
 extern volatile int mode, fan;
@@ -20,13 +22,20 @@ float get_actual(void);
 
 volatile int enc_diff = 0;
 volatile bool enc_but = false;
+volatile unsigned long enc_millis = 0;
+int unval_mode;
 float setpoint_unval_low, setpoint_unval_high;
-enum { ENC_IDLE, ENC_SELECT_HI, ENC_SELECT_LO, ENC_SET_HI, ENC_SET_LO } enc_state;
+enum { ENC_IDLE, ENC_SELECT_HI, ENC_SELECT_LO, ENC_SET_HI, ENC_SET_LO, ENC_MODE } enc_state;
 constexpr int32_t HOR_RES = 240;
 constexpr int32_t VER_RES = 240;
 
 lv_display_t *display;
 lv_indev_t *indev;
+
+void action_confirm(lv_event_t * e)
+{
+  enc_but = true;
+}
 
 void my_display_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
@@ -135,8 +144,6 @@ void Gui::brightness(int val)
 
 void Gui::update()
 {
-  static unsigned long enc_millis = 0;
-
   lv_task_handler();
   ui_tick();
   if (enc_state != ENC_IDLE && millis() - enc_millis > 10000)
@@ -170,6 +177,11 @@ void Gui::update()
     {
       setpoint_low = setpoint_unval_low;
       setpoint_high = setpoint_unval_high;
+      enc_state = ENC_IDLE;
+    }
+    else if (enc_state == ENC_MODE)
+    {
+      mode = unval_mode;
       enc_state = ENC_IDLE;
     }
     enc_but = false;
@@ -207,10 +219,14 @@ void Gui::update()
       {
         setpoint_unval_high = setpoint_high;
         setpoint_unval_low = setpoint_low;
+        unval_mode = mode;
+        enc_state = ENC_SET_LO;
       }
-      enc_state = ENC_SET_LO;
-      setpoint_unval_low += enc_diff;
-      set_low(setpoint_unval_low, setpoint_unval_high);
+      if (enc_state == ENC_SET_LO)
+      {
+        setpoint_unval_low += enc_diff;
+        set_low(setpoint_unval_low, setpoint_unval_high);
+      }
       break;
     case TURBRO::MODE_COOL:
     case TURBRO::MODE_DRY:
@@ -218,10 +234,14 @@ void Gui::update()
       {
         setpoint_unval_high = setpoint_high;
         setpoint_unval_low = setpoint_low;
+        unval_mode = mode;
+        enc_state = ENC_SET_HI;
       }
-      enc_state = ENC_SET_HI;
-      setpoint_unval_high += enc_diff;
-      set_high(setpoint_unval_low, setpoint_unval_high);
+      if (enc_state == ENC_SET_HI)
+      {
+        setpoint_unval_high += enc_diff;
+        set_high(setpoint_unval_low, setpoint_unval_high);
+      }
       break;
     }
     enc_diff = 0;
@@ -239,13 +259,18 @@ void set_var_actual(int32_t value)
 
 int32_t get_var_mode()
 {
+  if (enc_state == ENC_MODE)
+  {
+    return unval_mode;
+  }
   return mode;
 }
 
 void set_var_mode(int32_t value)
 {
-  mode = value;
-  enc_state = ENC_IDLE;
+  enc_millis = millis();
+  enc_state = ENC_MODE;
+  unval_mode = value;
 }
 
 int32_t get_var_setpoint_cool()
